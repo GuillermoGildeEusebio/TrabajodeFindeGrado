@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.TFG.springbootApp.service.requestLibrAIryTokens;
+import com.TFG.springbootApp.auxiliarService.PronombresRelativos;
 import com.TFG.springbootApp.auxiliarService.respuestaJSONCorreccion;
 import com.TFG.springbootApp.auxiliarService.respuestaJSONDeteccion;
 import com.google.gson.Gson;
@@ -35,19 +36,19 @@ public class ReglaExplicacion {
 	public String explicacionDeteccion(@RequestParam(value = "text", defaultValue = "") String text) throws IOException {
 
 		List<String[]> blockWords = new LinkedList<String[]>();
-		
+
 		Map<String[] ,Integer> explicacionesDetectadas = new HashMap<String[] , Integer>();
-		
+
 		Map<String[] ,Integer> posiblesExplicaciones = new HashMap<String[] , Integer>();
-		
+
 		Map<String[] ,Integer> posiblesExplicacionesVerbo = new HashMap<String[] , Integer>();
 
 		int id = 1;
 		String name = "Regla - Explicaciones entre comas";
 		String description = "Detectar el uso de explicaciones entre comas.";
 		boolean pass = true;
-		
-	
+
+
 
 		/*
 		 *  Cogemos el texto y lo dividimos por las comas 
@@ -87,12 +88,12 @@ public class ReglaExplicacion {
 			for (String tokens : frasediv){
 				frase  = frase +  " " + tokens;
 			}
-			
+
 			//llamada a Libraly
 
 			String[] filter = {"VERB"};
 			String url = "tokens"; //Servicio a utilizar de LibrAIry
-			
+
 			String response = requestLibrAIryTokens.request(filter, frase, url);
 			if (!response.contains("ERROR")) {
 
@@ -105,81 +106,127 @@ public class ReglaExplicacion {
 			}
 
 		}
-		
-		
+
+
 		/*
 		 * Para la identificacion de explicaciones lo que hay antes de la coma debe ser un pronombre, un nombre o un nombre propio
 		 */
-		
+
 
 		for (String[] frasediv : posiblesExplicacionesVerbo.keySet()){
-			
+
 			int j = posiblesExplicacionesVerbo.get(frasediv);
-			
+
 			if(j <= blockWords.size() -2) {
-			
-			String [] blockBefore = blockWords.get(j-1);
-			
-			String posibleSujeto = blockBefore[blockBefore.length-1];
-			
-			String [] blockPost = blockWords.get(j+1);
-			
-			String posibleVerbo = "";
-			
-			for (String words : blockPost){
-				
-				posibleVerbo = posibleVerbo + words;
-				
+
+				String [] blockBefore = blockWords.get(j-1);
+
+				String posibleSujeto = blockBefore[blockBefore.length-1];
+
+				String [] blockPost = blockWords.get(j+1);
+
+				String posibleVerboDespues = "";
+
+				for (String words : blockPost){
+
+					posibleVerboDespues = posibleVerboDespues + words;
+
+				}
+
+				String posibleVerbo = "";
+
+				for (String words : blockWords.get(j)){
+
+					posibleVerbo = posibleVerbo + words;
+
+				}
+
+
+				boolean tieneSujeto = false;
+
+				boolean tieneVerbo = true;
+
+				boolean tieneVerboDespues = true;
+
+				String[] filter = new String[3];
+				filter[0] = "PROPER_NOUN";
+				filter[1] = "PRONOUN";
+				filter[2] = "NOUN";
+
+				String url = "tokens"; //Servicio a utilizar de LibrAIry
+				String response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
+						tieneSujeto = true;
+
+				}
+
+
+				String[] filter1 = new String[1];
+				filter1[0] = "VERB";
+
+
+				url = "tokens"; //Servicio a utilizar de LibrAIry
+				response = requestLibrAIryTokens.request(filter1, posibleVerboDespues, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //tiene un verbo en la frase despues de la de entre comas
+						tieneVerboDespues = true;
+
+				}
+
+
+				response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //tiene un verbo en la frase entre comas
+						tieneVerbo = true;
+
+				}
+
+
+
+
+				PronombresRelativos allRelativos = new PronombresRelativos();
+
+				String pronomRela = "";
+
+				int i = 0;
+				while(pronomRela.equals("")) {															//error espacio en blanco despues de la coma
+					if(!(blockWords.get(j)[i].equals(" ") || blockWords.get(j)[i].equals("")))
+						pronomRela = blockWords.get(j)[i];
+					i++;
+				}
+
+
+				boolean tieneRelativo = false;
+
+				tieneRelativo = allRelativos.isRelativo(pronomRela);				// caso posible de que el pronombre relativo sea solo una palabra
+
+				if(!tieneRelativo) {												//caso  posible de que el pronombre relativo sea dos palabras
+
+					pronomRela = pronomRela + " " + blockWords.get(j)[i];
+					tieneRelativo = allRelativos.isRelativo(pronomRela);
+				}
+
+				if(tieneVerbo&&tieneSujeto&&tieneVerboDespues&&tieneRelativo)
+					explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
+
 			}
-			
-			boolean tieneSujeto = false;
-			
-			boolean tieneVerbo = true;
-			
-			String[] filter = new String[3];
-			filter[0] = "PROPER_NOUN";
-			filter[1] = "PRONOUN";
-			filter[2] = "NOUN";
-			
-			String url = "tokens"; //Servicio a utilizar de LibrAIry
-			String response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
-			if (!response.contains("ERROR")) {
 
-				JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-				String tokens = responseJSON.get("tokens").toString();
-				if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-					tieneSujeto = true;
-
-			}
-			
-			
-			String[] filter1 = new String[1];
-			filter1[0] = "VERB";
-
-			
-			url = "tokens"; //Servicio a utilizar de LibrAIry
-			response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
-			if (!response.contains("ERROR")) {
-
-				JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-				String tokens = responseJSON.get("tokens").toString();
-				if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-					tieneVerbo = true;
-
-			}
-			
-			
-			
-			if(tieneVerbo&&tieneSujeto)
-			explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
-			
 		}
-			
-		}
 
-		
+
 		String reason = "El texto contiene las siguientes explicaciones [";
 		int i = 0;
 		for (String[] frasediv : explicacionesDetectadas.keySet()){
@@ -188,12 +235,12 @@ public class ReglaExplicacion {
 				explicacion  = explicacion +  " " + tokens;
 			}
 			reason = reason + explicacion;
-			
+
 			if(i!=explicacionesDetectadas.size()-1)
 				reason = reason + " , ";
 			i++;
 		}
-		
+
 		reason = reason + "]";
 
 		return respuestaJSONDeteccion.codificador(id,name,description, pass, reason);	
@@ -205,18 +252,18 @@ public class ReglaExplicacion {
 
 		List<String[]> blockWords = new LinkedList<String[]>();
 
-		
+
 		Map<String[] ,Integer> explicacionesDetectadas = new HashMap<String[] , Integer>();
-		
+
 		Map<String[] ,Integer> posiblesExplicaciones = new HashMap<String[] , Integer>();
-		
+
 		Map<String[] ,Integer> posiblesExplicacionesVerbo = new HashMap<String[] , Integer>();
 
 		int id = 1;
 		String name = "Regla - Explicaciones entre comas";
 		String description = "Detectar el uso de explicaciones entre comas.";
-		
-	
+
+
 
 		/*
 		 *  Cogemos el texto y lo dividimos por las comas 
@@ -255,12 +302,12 @@ public class ReglaExplicacion {
 			for (String tokens : frasediv){
 				frase  = frase +  " " + tokens;
 			}
-			
+
 			//llamada a Libraly
 
 			String[] filter = {"VERB"};
 			String url = "tokens"; //Servicio a utilizar de LibrAIry
-			
+
 			String response = requestLibrAIryTokens.request(filter, frase, url);
 			if (!response.contains("ERROR")) {
 
@@ -273,105 +320,147 @@ public class ReglaExplicacion {
 			}
 
 		}
-		
-		
+
+
 		/*
 		 * Para la identificacion de explicaciones lo que hay antes de la coma debe ser un pronombre, un nombre o un nombre propio
 		 */
-		
+
 
 		for (String[] frasediv : posiblesExplicacionesVerbo.keySet()){
-		
+
 			int j = posiblesExplicacionesVerbo.get(frasediv);
-			
+
 			if(j <= blockWords.size() -2) {
-			
-			String [] blockBefore = blockWords.get(j-1);
-			
-			String posibleSujeto = blockBefore[blockBefore.length-1];
-			
-			String [] blockPost = blockWords.get(j+1);
-			
-			String posibleVerbo = "";
-			
-			for (String words : blockPost){
-				
-				posibleVerbo = posibleVerbo + words;
-				
+
+				String [] blockBefore = blockWords.get(j-1);
+
+				String posibleSujeto = blockBefore[blockBefore.length-1];
+
+				String [] blockPost = blockWords.get(j+1);
+
+				String posibleVerboDespues = "";
+
+				for (String words : blockPost){
+
+					posibleVerboDespues = posibleVerboDespues + words;
+
+				}
+
+				String posibleVerbo = "";
+
+				for (String words : blockWords.get(j)){
+
+					posibleVerbo = posibleVerbo + words;
+
+				}
+
+
+				boolean tieneSujeto = false;
+
+				boolean tieneVerbo = true;
+
+				boolean tieneVerboDespues = true;
+
+				String[] filter = new String[3];
+				filter[0] = "PROPER_NOUN";
+				filter[1] = "PRONOUN";
+				filter[2] = "NOUN";
+
+				String url = "tokens"; //Servicio a utilizar de LibrAIry
+				String response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
+						tieneSujeto = true;
+
+				}
+
+
+				String[] filter1 = new String[1];
+				filter1[0] = "VERB";
+
+
+				url = "tokens"; //Servicio a utilizar de LibrAIry
+				response = requestLibrAIryTokens.request(filter1, posibleVerboDespues, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //tiene un verbo en la frase despues de la de entre comas
+						tieneVerboDespues = true;
+
+				}
+
+
+				response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //tiene un verbo en la frase entre comas
+						tieneVerbo = true;
+
+				}
+
+
+				PronombresRelativos allRelativos = new PronombresRelativos();
+
+				String pronomRela = "";
+
+				int i = 0;
+				while(pronomRela.equals("")) {															//error espacio en blanco despues de la coma
+					if(!(blockWords.get(j)[i].equals(" ") || blockWords.get(j)[i].equals("")))
+						pronomRela = blockWords.get(j)[i];
+					i++;
+				}
+
+
+				boolean tieneRelativo = false;
+
+				tieneRelativo = allRelativos.isRelativo(pronomRela);				// caso posible de que el pronombre relativo sea solo una palabra
+
+				if(!tieneRelativo) {												//caso  posible de que el pronombre relativo sea dos palabras
+
+					pronomRela = pronomRela + " " + blockWords.get(j)[i];
+					tieneRelativo = allRelativos.isRelativo(pronomRela);
+				}
+
+				if(tieneVerbo&&tieneSujeto&&tieneVerboDespues&&tieneRelativo)
+					explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
+
 			}
-			
-			boolean tieneSujeto = false;
-			
-			boolean tieneVerbo = true;
-			
-			String[] filter = new String[3];
-			filter[0] = "PROPER_NOUN";
-			filter[1] = "PRONOUN";
-			filter[2] = "NOUN";
-			
-			String url = "tokens"; //Servicio a utilizar de LibrAIry
-			String response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
-			if (!response.contains("ERROR")) {
 
-				JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-				String tokens = responseJSON.get("tokens").toString();
-				if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-					tieneSujeto = true;
-
-			}
-			
-			
-			String[] filter1 = new String[1];
-			filter1[0] = "VERB";
-
-			
-			url = "tokens"; //Servicio a utilizar de LibrAIry
-			response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
-			if (!response.contains("ERROR")) {
-
-				JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-				String tokens = responseJSON.get("tokens").toString();
-				if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-					tieneVerbo = true;
-
-			}
-			
-			
-			
-			
-			
-			if(tieneVerbo&&tieneSujeto)
-			explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
-			
-		}
-			
 		}
 
 		String textoCorregido = "";
 		boolean ponerComa = false;
 		Collection<Integer> posicionExplicaciones = explicacionesDetectadas.values();
-		
+
 		for (int i = 0; i < blockWords.size(); i++) {
 			boolean next = false;
 
-				if(posicionExplicaciones.contains(i)) {
-					next = true;
-					ponerComa = false;
-				}
-			
+			if(posicionExplicaciones.contains(i)) {
+				next = true;
+				ponerComa = false;
+			}
+
 
 			if(!next) {	
 				for (String tokens : blockWords.get(i)){
 					if(ponerComa) {
-					textoCorregido  = textoCorregido +  "," + tokens;
-					ponerComa = false;
+						textoCorregido  = textoCorregido +  "," + tokens;
+						ponerComa = false;
 					}
 					else {
-					textoCorregido  = textoCorregido +  " " + tokens;
+						textoCorregido  = textoCorregido +  " " + tokens;
 					}
-					
+
 				}
 				ponerComa = true;
 			}
@@ -386,7 +475,7 @@ public class ReglaExplicacion {
 		return respuestaJSONCorreccion.codificador(id,name,description, textoCorregido);	
 	}	
 
-	
+
 
 
 }
