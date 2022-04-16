@@ -5,6 +5,7 @@ package com.TFG.springbootApp.controller;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,12 +14,18 @@ import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.TFG.springbootApp.service.expertAI;
 import com.TFG.springbootApp.service.requestLibrAIryTokens;
+import com.TFG.springbootApp.auxiliarService.Preposiciones;
 import com.TFG.springbootApp.auxiliarService.PronombresRelativos;
 import com.TFG.springbootApp.auxiliarService.respuestaJSONCorreccion;
 import com.TFG.springbootApp.auxiliarService.respuestaJSONDeteccion;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import ai.expert.nlapi.v2.message.AnalyzeResponse;
 
 
 
@@ -35,6 +42,14 @@ public class ReglaExplicacion {
 	@GetMapping({"/explicacionDeteccion"})
 	public String explicacionDeteccion(@RequestParam(value = "text", defaultValue = "") String text) throws IOException {
 
+
+
+		int id = 1;
+		String name = "Regla - Deteccion de Explicaciones entre comas";
+		String description = "Detectar el uso de explicaciones entre comas.";
+		boolean pass = true;
+		
+		
 		List<String[]> blockWords = new LinkedList<String[]>();
 
 		Map<String[] ,Integer> explicacionesDetectadas = new HashMap<String[] , Integer>();
@@ -42,12 +57,6 @@ public class ReglaExplicacion {
 		Map<String[] ,Integer> posiblesExplicaciones = new HashMap<String[] , Integer>();
 
 		Map<String[] ,Integer> posiblesExplicacionesVerbo = new HashMap<String[] , Integer>();
-
-		int id = 1;
-		String name = "Regla - Explicaciones entre comas";
-		String description = "Detectar el uso de explicaciones entre comas.";
-		boolean pass = true;
-
 
 
 		/*
@@ -77,7 +86,6 @@ public class ReglaExplicacion {
 				posiblesExplicaciones.put(palabras,i);
 
 		}
-
 
 		/*
 		 * Para que entren en la posibilidad de ser posibles explicaciones deben tener un verbo en ella
@@ -113,77 +121,57 @@ public class ReglaExplicacion {
 		 */
 
 
+		AnalyzeResponse responseAI = null;
+
+		//llamada al analizador sintactico
+
+		try {
+			responseAI = expertAI.analyzeText(text);
+		} catch (Exception e) {
+
+			e.printStackTrace();
+		}
+
+		JsonObject responseJSONAI = new Gson().fromJson(responseAI.toJSON(),JsonObject.class);	            
+
+		JsonArray tokensAI = responseJSONAI.get("data").getAsJsonObject().get("tokens").getAsJsonArray();
+
+
 		for (String[] frasediv : posiblesExplicacionesVerbo.keySet()){
 
 			int j = posiblesExplicacionesVerbo.get(frasediv);
 
 			if(j <= blockWords.size() -2) {
 
-				String [] blockBefore = blockWords.get(j-1);
 
-				String posibleSujeto = blockBefore[blockBefore.length-1];
-
-				String [] blockPost = blockWords.get(j+1);
-
-				String posibleVerboDespues = "";
-
-				for (String words : blockPost){
-
-					posibleVerboDespues = posibleVerboDespues + words;
-
-				}
 
 				String posibleVerbo = "";
 
-				for (String words : blockWords.get(j)){
+				boolean punto = false;
 
-					posibleVerbo = posibleVerbo + words;
+				//Cogemos la primera parte hasta el punto en caso de que este estuviese en el bloque posterior
 
-				}
+				for (String words : blockWords.get(j+1)){
 
+					if(!punto)
+						posibleVerbo = posibleVerbo + " " + words;
 
-				boolean tieneSujeto = false;
+					if(words.equals(".") || words.contains("."))
+						punto = true;
+
+				}	
+
 
 				boolean tieneVerbo = true;
 
-				boolean tieneVerboDespues = true;
-
-				String[] filter = new String[3];
-				filter[0] = "PROPER_NOUN";
-				filter[1] = "PRONOUN";
-				filter[2] = "NOUN";
-
 				String url = "tokens"; //Servicio a utilizar de LibrAIry
-				String response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
-				if (!response.contains("ERROR")) {
-
-					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-					String tokens = responseJSON.get("tokens").toString();
-					if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-						tieneSujeto = true;
-
-				}
 
 
 				String[] filter1 = new String[1];
 				filter1[0] = "VERB";
 
 
-				url = "tokens"; //Servicio a utilizar de LibrAIry
-				response = requestLibrAIryTokens.request(filter1, posibleVerboDespues, url);
-				if (!response.contains("ERROR")) {
-
-					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-					String tokens = responseJSON.get("tokens").toString();
-					if(tokens.length() != 2)   //tiene un verbo en la frase despues de la de entre comas
-						tieneVerboDespues = true;
-
-				}
-
-
-				response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
+				String response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
 				if (!response.contains("ERROR")) {
 
 					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
@@ -196,30 +184,192 @@ public class ReglaExplicacion {
 
 
 
+				String [] blockBefore = blockWords.get(j-1);
+
+				String posibleSujeto = blockBefore[blockBefore.length-1];
 
 				PronombresRelativos allRelativos = new PronombresRelativos();
 
-				String pronomRela = "";
+				Preposiciones preposiciones = new Preposiciones();
+
+				String palabra1 = "";
+				String palabra2 = "";
+				String palabra3 = "";
+
+				boolean tieneNexoInicio = false ;
+
+				boolean tieneNexo = false ;
+
+				boolean tieneSujeto = false;
+
+				boolean iguales = false;
+
+				String[] filter = new String[3];
+				filter[0] = "PROPER_NOUN";
+				filter[1] = "PRONOUN";
+				filter[2] = "NOUN";
+
+				url = "tokens"; //Servicio a utilizar de LibrAIry
+				response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propio antes de las comas
+						tieneSujeto = true;
+
+				}
+
 
 				int i = 0;
-				while(pronomRela.equals("")) {															//error espacio en blanco despues de la coma
+				while(palabra1.equals("")) {															//error espacio en blanco despues de la coma
 					if(!(blockWords.get(j)[i].equals(" ") || blockWords.get(j)[i].equals("")))
-						pronomRela = blockWords.get(j)[i];
+						palabra1 = blockWords.get(j)[i];
 					i++;
 				}
 
 
-				boolean tieneRelativo = false;
+				palabra2 = blockWords.get(j)[i];
 
-				tieneRelativo = allRelativos.isRelativo(pronomRela);				// caso posible de que el pronombre relativo sea solo una palabra
+				palabra3 = blockWords.get(j)[i+1];
 
-				if(!tieneRelativo) {												//caso  posible de que el pronombre relativo sea dos palabras
+				//Caso 1 -->	Que la estructura este al inicio
 
-					pronomRela = pronomRela + " " + blockWords.get(j)[i];
-					tieneRelativo = allRelativos.isRelativo(pronomRela);
+				if(allRelativos.isRelativo(palabra1) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2)) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3)))
+					tieneNexoInicio = true;
+
+
+
+				//Caso 2 --> b.	Que la estructura este en medio de la frase. Para este caso usamos expert ai para ver si se refiere al nombre antes de la coma
+
+				if(!tieneNexoInicio) {
+
+					palabra1 = "";
+					palabra2 = "";
+					palabra3 = "";
+
+
+					//Buscamos la estructura
+
+					while(!tieneNexo&&i<blockWords.get(j).length - 1) {
+
+						palabra1 = blockWords.get(j)[i];
+						if(allRelativos.isRelativo(palabra1)) {
+							tieneNexo = true;
+
+						}
+
+						if(i<blockWords.get(j).length - 2) {
+
+							palabra2 = blockWords.get(j)[i + 1];
+							if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2))) {
+								tieneNexo = true;
+							}
+
+						}
+
+
+
+						if(i<blockWords.get(j).length - 3) {
+
+							palabra3 = blockWords.get(j)[i +2];
+							if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3))) {
+								tieneNexo = true;
+							}
+
+						}
+
+
+						i++;
+
+
+					}
+
+
+					//Vemos si pertenece al caso1
+
+					if(tieneNexo) {
+
+
+						int posComa = 0;
+						int k = 0;
+
+						//Bucle para colocarnos en el bloque de la posible aposicion
+
+						while(posComa != j) {
+							if(tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")) {
+								posComa++;
+							}
+
+							k++;
+						}
+
+						//cogemos el id del sujeto
+
+						int idSujeto = tokensAI.get(k-2).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
+
+
+
+
+						boolean find = false;
+						int referencia = -1;
+
+						int kinit = k;
+
+						//Buscamos el relativo para coger al referencia del relativo
+
+
+						while(!find&&k<tokensAI.size()) {
+							if(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim().equals("PRO")) {
+								referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+								find = true;
+							}
+							k++;
+						}
+
+
+						k = kinit;
+
+						boolean end = false;
+
+						ArrayList<Integer> idRecorridos = new ArrayList<Integer>();  // aqui vamos guardando por que id vamos pasando para que no se quede en bucle
+
+
+						//bucle para ver si nuestro pronombre al final se acaba relacionando con el nombre antes de la coma 
+
+						while(referencia > kinit  && !end) {
+
+							boolean restart = true;
+							k = kinit;
+							while(restart) {
+								if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
+									referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+									if(idRecorridos.contains(referencia))
+										end = true;
+									else
+										idRecorridos.add(referencia);
+									restart = false;
+								}
+								k++;
+							}
+
+						}
+
+
+						iguales = referencia == idSujeto;
+
+
+
+					}
+
 				}
 
-				if(tieneVerbo&&tieneSujeto&&tieneVerboDespues&&tieneRelativo)
+
+
+
+
+				if(tieneSujeto&&tieneVerbo&&(tieneNexoInicio||iguales))
 					explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
 
 			}
@@ -250,19 +400,19 @@ public class ReglaExplicacion {
 	@GetMapping({"/explicacionAdaptacion"})
 	public String explicacionAdaptacion(@RequestParam(value = "text", defaultValue = "") String text) throws IOException {
 
-		List<String[]> blockWords = new LinkedList<String[]>();
 
+
+		int id = 1;
+		String name = "Regla - Adaptacion de Explicaciones entre comas";
+		String description = "Adaptar el texto con las explicaciones entre comas.";
+		
+		List<String[]> blockWords = new LinkedList<String[]>();
 
 		Map<String[] ,Integer> explicacionesDetectadas = new HashMap<String[] , Integer>();
 
 		Map<String[] ,Integer> posiblesExplicaciones = new HashMap<String[] , Integer>();
 
 		Map<String[] ,Integer> posiblesExplicacionesVerbo = new HashMap<String[] , Integer>();
-
-		int id = 1;
-		String name = "Regla - Explicaciones entre comas";
-		String description = "Detectar el uso de explicaciones entre comas.";
-
 
 
 		/*
@@ -283,6 +433,7 @@ public class ReglaExplicacion {
 		for (int i = 1; i < block.length; i++) {
 			boolean posibleExplicacion = true;
 			String[] palabras  =  blockWords.get(i);
+
 			for (String tokens : palabras){
 				if(tokens.indexOf(".") != -1)
 					posibleExplicacion = false;
@@ -291,7 +442,6 @@ public class ReglaExplicacion {
 				posiblesExplicaciones.put(palabras,i);
 
 		}
-
 
 		/*
 		 * Para que entren en la posibilidad de ser posibles explicaciones deben tener un verbo en ella
@@ -327,77 +477,57 @@ public class ReglaExplicacion {
 		 */
 
 
+		AnalyzeResponse responseAI = null;
+
+		//llamada al analizador sintactico
+
+		try {
+			responseAI = expertAI.analyzeText(text);
+		} catch (Exception e) {
+
+			e.printStackTrace();
+		}
+
+		JsonObject responseJSONAI = new Gson().fromJson(responseAI.toJSON(),JsonObject.class);	            
+
+		JsonArray tokensAI = responseJSONAI.get("data").getAsJsonObject().get("tokens").getAsJsonArray();
+
+
 		for (String[] frasediv : posiblesExplicacionesVerbo.keySet()){
 
 			int j = posiblesExplicacionesVerbo.get(frasediv);
 
 			if(j <= blockWords.size() -2) {
 
-				String [] blockBefore = blockWords.get(j-1);
 
-				String posibleSujeto = blockBefore[blockBefore.length-1];
-
-				String [] blockPost = blockWords.get(j+1);
-
-				String posibleVerboDespues = "";
-
-				for (String words : blockPost){
-
-					posibleVerboDespues = posibleVerboDespues + words;
-
-				}
 
 				String posibleVerbo = "";
 
-				for (String words : blockWords.get(j)){
+				boolean punto = false;
 
-					posibleVerbo = posibleVerbo + words;
+				//Cogemos la primera parte hasta el punto en caso de que este estuviese en el bloque posterior
 
-				}
+				for (String words : blockWords.get(j+1)){
 
+					if(!punto)
+						posibleVerbo = posibleVerbo + " " + words;
 
-				boolean tieneSujeto = false;
+					if(words.equals(".") || words.contains("."))
+						punto = true;
+
+				}	
+
 
 				boolean tieneVerbo = true;
 
-				boolean tieneVerboDespues = true;
-
-				String[] filter = new String[3];
-				filter[0] = "PROPER_NOUN";
-				filter[1] = "PRONOUN";
-				filter[2] = "NOUN";
-
 				String url = "tokens"; //Servicio a utilizar de LibrAIry
-				String response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
-				if (!response.contains("ERROR")) {
-
-					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-					String tokens = responseJSON.get("tokens").toString();
-					if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-						tieneSujeto = true;
-
-				}
 
 
 				String[] filter1 = new String[1];
 				filter1[0] = "VERB";
 
 
-				url = "tokens"; //Servicio a utilizar de LibrAIry
-				response = requestLibrAIryTokens.request(filter1, posibleVerboDespues, url);
-				if (!response.contains("ERROR")) {
-
-					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-					String tokens = responseJSON.get("tokens").toString();
-					if(tokens.length() != 2)   //tiene un verbo en la frase despues de la de entre comas
-						tieneVerboDespues = true;
-
-				}
-
-
-				response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
+				String response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
 				if (!response.contains("ERROR")) {
 
 					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
@@ -409,29 +539,197 @@ public class ReglaExplicacion {
 				}
 
 
+
+				String [] blockBefore = blockWords.get(j-1);
+
+				String posibleSujeto = blockBefore[blockBefore.length-1];
+
 				PronombresRelativos allRelativos = new PronombresRelativos();
 
-				String pronomRela = "";
+				Preposiciones preposiciones = new Preposiciones();
+
+				String palabra1 = "";
+				String palabra2 = "";
+				String palabra3 = "";
+
+				boolean tieneNexoInicio = false ;
+
+				boolean tieneNexo = false ;
+
+				boolean tieneSujeto = false;
+
+				boolean iguales = false;
+
+				String[] filter = new String[3];
+				filter[0] = "PROPER_NOUN";
+				filter[1] = "PRONOUN";
+				filter[2] = "NOUN";
+
+				url = "tokens"; //Servicio a utilizar de LibrAIry
+				response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
+				if (!response.contains("ERROR")) {
+
+					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
+
+					String tokens = responseJSON.get("tokens").toString();
+					if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propio antes de las comas
+						tieneSujeto = true;
+
+				}
+
 
 				int i = 0;
-				while(pronomRela.equals("")) {															//error espacio en blanco despues de la coma
+				while(palabra1.equals("")) {															//error espacio en blanco despues de la coma
 					if(!(blockWords.get(j)[i].equals(" ") || blockWords.get(j)[i].equals("")))
-						pronomRela = blockWords.get(j)[i];
+						palabra1 = blockWords.get(j)[i];
 					i++;
 				}
 
 
-				boolean tieneRelativo = false;
+				palabra2 = blockWords.get(j)[i];
 
-				tieneRelativo = allRelativos.isRelativo(pronomRela);				// caso posible de que el pronombre relativo sea solo una palabra
+				palabra3 = blockWords.get(j)[i+1];
 
-				if(!tieneRelativo) {												//caso  posible de que el pronombre relativo sea dos palabras
+				//Caso 1 -->	Que la estructura este al inicio
 
-					pronomRela = pronomRela + " " + blockWords.get(j)[i];
-					tieneRelativo = allRelativos.isRelativo(pronomRela);
+				if(allRelativos.isRelativo(palabra1) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2)) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3)))
+					tieneNexoInicio = true;
+
+
+
+				//Caso 2 --> b.	Que la estructura este en medio de la frase. Para este caso usamos expert ai para ver si se refiere al nombre antes de la coma
+
+				if(!tieneNexoInicio) {
+
+					palabra1 = "";
+					palabra2 = "";
+					palabra3 = "";
+
+
+					//Buscamos la estructura
+
+					while(!tieneNexo&&i<blockWords.get(j).length - 1) {
+
+						palabra1 = blockWords.get(j)[i];
+						if(allRelativos.isRelativo(palabra1)) {
+							tieneNexo = true;
+						
+						}
+
+						if(i<blockWords.get(j).length - 2) {
+
+							palabra2 = blockWords.get(j)[i + 1];
+							if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2))) {
+								tieneNexo = true;
+
+								
+							}
+
+						}
+
+
+
+						if(i<blockWords.get(j).length - 3) {
+
+							palabra3 = blockWords.get(j)[i +2];
+							if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3))) {
+								tieneNexo = true;
+
+								
+							}
+
+						}
+
+
+						i++;
+
+
+					}
+
+
+
+
+					if(tieneNexo) {
+
+
+						int posComa = 0;
+						int k = 0;
+
+						//Bucle para colocarnos en el bloque de la posible aposicion
+
+						while(posComa != j) {
+							if(tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")) {
+								posComa++;
+							}
+
+							k++;
+						}
+
+						//cogemos el id del sujeto
+
+						int idSujeto = tokensAI.get(k-2).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
+
+
+
+
+						boolean find = false;
+						int referencia = -1;
+
+						int kinit = k;
+
+						//Buscamos el relativo para coger al referencia del relativo
+
+
+						while(!find&&k<tokensAI.size()) {
+							if(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim().equals("PRO")) {
+								referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+								find = true;
+							}
+							k++;
+						}
+
+
+						k = kinit;
+
+						boolean end = false;
+
+						ArrayList<Integer> idRecorridos = new ArrayList<Integer>();  // aqui vamos guardando por que id vamos pasando para que no se quede en bucle
+
+
+						//bucle para ver si nuestro pronombre al final se acaba relacionando con el nombre antes de la coma 
+
+						while(referencia > kinit  && !end) {
+
+							boolean restart = true;
+							k = kinit;
+							while(restart) {
+								if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
+									referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+									if(idRecorridos.contains(referencia))
+										end = true;
+									else
+										idRecorridos.add(referencia);
+									restart = false;
+								}
+								k++;
+							}
+
+						}
+
+
+						iguales = referencia == idSujeto;
+
+
+
+					}
+
 				}
 
-				if(tieneVerbo&&tieneSujeto&&tieneVerboDespues&&tieneRelativo)
+
+
+
+
+				if(tieneSujeto&&tieneVerbo&&(tieneNexoInicio||iguales))
 					explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
 
 			}
