@@ -1,6 +1,14 @@
 package com.TFG.springbootApp.service;
 
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import ai.expert.nlapi.security.Authentication;
 import ai.expert.nlapi.security.Authenticator;
 import ai.expert.nlapi.security.BasicAuthenticator;
@@ -26,7 +34,32 @@ public class expertAI {
     
     //Method for setting the authentication credentials - set your credentials here.
     public static Authentication createAuthentication() throws Exception {
-    	Credential credentialsProvider = new Credential("guillermo.gildeeusebio@alumnos.upm.es", "GuillermoGil-2000", "eyJraWQiOiI1RDVOdFM1UHJBajVlSlVOK1RraXVEZE15WWVMMFJQZ3RaUDJGTlhESHpzPSIsImFsZyI6IlJTMjU2In0.eyJjdXN0b206Y291bnRyeSI6IkVTIiwic3ViIjoiMzUxNzM0MTUtYjVhOS00N2VlLWI4MjgtNmRmZmEwODk3MmJhIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC5ldS13ZXN0LTEuYW1hem9uYXdzLmNvbVwvZXUtd2VzdC0xX0FVSGdRMDhDQiIsImNvZ25pdG86dXNlcm5hbWUiOiIzNTE3MzQxNS1iNWE5LTQ3ZWUtYjgyOC02ZGZmYTA4OTcyYmEiLCJhdWQiOiIxZWdzNjNxOTlwM3NlYmVjaHNiNzI5dDgwbyIsImV2ZW50X2lkIjoiYjFhMzczMTctYjYzZi00ZGU0LWJlNjYtMGUyZDI2YjVjMmI2IiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE2NDk5NTQwMDMsImV4cCI6MTY1MDEyNzIzNywiaWF0IjoxNjUwMDQwODM3LCJlbWFpbCI6Imd1aWxsZXJtby5naWxkZWV1c2ViaW9AYWx1bW5vcy51cG0uZXMiLCJjdXN0b206bWFya2V0aW5nQXV0aCI6IjAifQ.jGdAu9rEHoKUxuIsM8-dqPLG5HSLAl4kIOhLOW0IyL7SrUJshMnvM4ZhkV5QaFB0NjXM5OhExzFxu7V4Mq20ycdNfyXLe5VBi7WKGbpJgqsE2nA4sIGRSCA3-x3ucVdKyVIqN_SdtjT4Wkrl3sQ1MKfH4Eg8CZ5NMrWS11GWOiyxHdntQUUPj4DF6UuB1AeKorQ3ytZRarm5naoiVjvc4bfOLKgGba9pyB21-ISxAmxhQqk1bZGXLVOHA_ugKTZ3-u6O8M7iPoZcNEgWGXOCpHVxR9SlxpgjQMm6zdG0-MD1MIE_0rM2zWM5oyXm8DvVMJ1fmLqy1vT0FEYNyc_KRg");
+    	
+    	//generamos el token que caduca cada 24 h
+    	String token = "";
+		try {
+			String cmd = "curl -X POST https://developer.expert.ai/oauth2/token -H \"Content-Type: application/json; charset=utf-8\" -d \"{\\\"username\\\": \\\"guillermo.gildeeusebio@alumnos.upm.es\\\", \\\"password\\\": \\\"GuillermoGil-2000\\\"}\""; //Comando de apagado en linux
+			Process process = Runtime.getRuntime().exec(cmd);
+			while(process.isAlive()){
+				
+			}
+			InputStream inputstream = process.getInputStream();
+			BufferedInputStream bufferedinputstream = new BufferedInputStream(inputstream);
+			
+			int i = -1;
+			while((i = bufferedinputstream.read() )!= -1) {
+				token = token + Character.toString((char) i );
+			}
+			
+			
+		} catch (IOException ioe) {
+			System.out.println (ioe);
+		}
+    	
+    	
+    	
+    	
+    	Credential credentialsProvider = new Credential("guillermo.gildeeusebio@alumnos.upm.es", "GuillermoGil-2000", token);
         Authenticator authenticator = new BasicAuthenticator(credentialsProvider);
         return new Authentication(authenticator);
     }
@@ -52,24 +85,24 @@ public class expertAI {
     
 
 	
-//	  public static void main(String[] args) { try { Analyzer analyzer =
-//	  createAnalyzer(); AnalyzeResponse response = null;
-//	  
-//	  
-//	  response = analyzer.relations(getSampleText());
-//	  response.prettyPrint();
-//	  
-//	  JsonObject responseJSON = new Gson().fromJson(response.toJSON(),
-//	  JsonObject.class);
-//	  
-//	  JsonArray tokens =
-//	  responseJSON.get("data").getAsJsonObject().get("tokens").getAsJsonArray();
-//	  
-//	  System.out.println(tokens.get(1).getAsJsonObject().get("lemma").toString());
-//	  
-//	  
-//	  
-//	  } catch(Exception ex) { ex.printStackTrace(); } }
+	  public static void main(String[] args) { try { Analyzer analyzer =
+	  createAnalyzer(); AnalyzeResponse response = null;
+	  
+	  
+	  response = analyzer.relations(getSampleText());
+	  response.prettyPrint();
+	  
+	  JsonObject responseJSON = new Gson().fromJson(response.toJSON(),
+	  JsonObject.class);
+	  
+	  JsonArray tokens =
+	  responseJSON.get("data").getAsJsonObject().get("tokens").getAsJsonArray();
+	  
+	  System.out.println(tokens.get(1).getAsJsonObject().get("lemma").toString());
+	  
+	  
+	  
+	  } catch(Exception ex) { ex.printStackTrace(); } }
 	 
     
 }

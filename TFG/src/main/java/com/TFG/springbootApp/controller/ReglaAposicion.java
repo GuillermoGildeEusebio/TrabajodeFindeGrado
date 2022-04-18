@@ -32,19 +32,7 @@ import ai.expert.nlapi.v2.message.AnalyzeResponse;
 @RestController
 public class ReglaAposicion {	
 
-
-
-
-	@GetMapping({"/aposicionDeteccion"})
-	public String apopsicionDeteccion(@RequestParam(value = "text", defaultValue = "") String text) throws IOException {
-
-
-
-
-		int id = 2;
-		String name = "Regla - Identificar Aposiciones entre comas";
-		String description = "Detectar el uso de explicaciones entre comas.";
-		boolean pass = true;
+	private Map<String[] ,Integer> detectorAposicion(String text) throws IOException{
 		
 		
 		List<String[]> blockWords = new LinkedList<String[]>();
@@ -287,6 +275,30 @@ public class ReglaAposicion {
 
 			}
 		}
+		
+		
+		return aposicionesDetectadas;
+	}
+	
+	
+
+
+	@GetMapping({"/aposicionDeteccion"})
+	public String apopsicionDeteccion(@RequestParam(value = "text", defaultValue = "") String text) throws IOException {
+
+
+
+
+		int id = 2;
+		String name = "Regla - Identificar Aposiciones entre comas";
+		String description = "Detectar el uso de explicaciones entre comas.";
+		boolean pass = true;
+		
+
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+
+
+		aposicionesDetectadas = detectorAposicion(text);
 
 
 		String reason = "El texto contiene las siguientes aposiciones [";
@@ -323,236 +335,19 @@ public class ReglaAposicion {
 
 		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
 
-		Map<String[] ,Integer> posiblesAposiciones = new HashMap<String[] , Integer>();
-
-		Map<String[] ,Integer> posiblesAposicionesSinVerbo = new HashMap<String[] , Integer>();
-
 
 		/*
 		 *  Cogemos el texto y lo dividimos por las comas 
 		 *  para identificar mejor las explicaciones o aposiciones
 		 */
+		
 		String[] block = text.split(",");
 		for (String words : block){
 			String[] word = words.split(" ");
 			blockWords.add(word);
 		}
 
-		/*
-		 * Vemos si tiene . en los bloques para la identificacion de 
-		 * falsas aposiciones o explicaciones
-		 */
-
-		for (int i = 1; i < block.length; i++) {
-			boolean posibleExplicacion = true;
-			String[] palabras  =  blockWords.get(i);
-
-			for (String tokens : palabras){
-				if(tokens.indexOf(".") != -1)
-					posibleExplicacion = false;
-			}
-			if(posibleExplicacion)
-				posiblesAposiciones.put(palabras,i);
-
-		}
-
-
-		/*
-		 * Para que entren en la posibilidad de ser posibles explicaciones deben tener un verbo en ella
-		 */
-
-		for (String[] frasediv : posiblesAposiciones.keySet()){
-			String frase = "";
-			for (String tokens : frasediv){
-				frase  = frase +  " " + tokens;
-			}
-
-			//llamada a Libraly
-
-			String[] filter = {"VERB"};
-			String url = "tokens"; //Servicio a utilizar de LibrAIry
-
-			String response = requestLibrAIryTokens.request(filter, frase, url);
-			if (!response.contains("ERROR")) {
-
-				JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-				String tokens = responseJSON.get("tokens").toString();
-				if(tokens.length() == 2)   //no tiene verbo entre comas
-					posiblesAposicionesSinVerbo.put(frasediv,posiblesAposiciones.get(frasediv));
-
-			}
-
-		}
-
-
-		/*
-		 * Para la identificacion de explicaciones lo que hay antes de la coma debe ser un pronombre, un nombre o un nombre propio
-		 * 
-		 * Identificacion despues de la coma de un verbo
-		 */
-
-		AnalyzeResponse responseAI = null;
-
-		//llamada al analizador sintactico
-
-		try {
-			responseAI = expertAI.analyzeText(text);
-		} catch (Exception e) {
-
-			e.printStackTrace();
-		}
-
-		JsonObject responseJSONAI = new Gson().fromJson(responseAI.toJSON(),JsonObject.class);	            
-
-		JsonArray tokensAI = responseJSONAI.get("data").getAsJsonObject().get("tokens").getAsJsonArray();
-
-
-		for (String[] frasediv : posiblesAposicionesSinVerbo.keySet()){
-
-			int j = posiblesAposicionesSinVerbo.get(frasediv);
-
-			if(j <= blockWords.size() -2) {
-
-
-				//Vamos a ver si la supuesta aposicion se esta refiriendo al nombre antes de la coma
-
-
-				int posComa = 0;
-				int k = 0;
-
-				//Bucle para colocarnos en el bloque de la posible aposicion
-
-				while(posComa != j) {
-					if(tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")) {
-						posComa++;
-					}
-
-					k++;
-				}
-
-				//cogemos el id del sujeto
-
-				int idSujeto = tokensAI.get(k-2).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
-
-
-				String [] blockAc = blockWords.get(j);
-
-				String blockActual = "";
-
-				for (String words : blockAc){
-
-					blockActual = blockActual + " " + words;
-
-				}
-
-
-				//cogemos el primer nombre de la posible aposicion
-
-				String[] filter2 = new String[1];
-				filter2[0] = "NOUN";
-
-
-				String url = "annotations"; //Servicio a utilizar de LibrAIry
-				String response = requestLibrAIryAnnotationsGroups.request(filter2, blockActual, url);
-				String noun = "";
-				if (!response.contains("ERROR")) {
-
-					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-					noun = responseJSON.getAsJsonObject().get("annotatedText").getAsJsonArray().get(0).getAsJsonObject().get("token").getAsJsonObject().get("lemma").getAsString().trim();
-
-
-				}
-
-
-				boolean find = false;
-				int referencia = -1;
-
-				//cogemos a quien hace referencia el nombre
-
-				while(!find&&!noun.equals("")) {
-					if(tokensAI.get(k).getAsJsonObject().get("lemma").getAsString().trim().equals(noun)) {
-						referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
-						find = true;
-					}
-					k++;
-				}
-
-				//si el nombre hace referencia al nombre/pronombre/Nombre personal de antes de la coma es una posible aposicion.
-
-				if(referencia == idSujeto) {
-
-					String [] blockBefore = blockWords.get(j-1);
-
-					String posibleSujeto = blockBefore[blockBefore.length-1];
-
-					String [] blockPost = blockWords.get(j+1);
-
-					String posibleVerbo = "";
-
-					boolean tieneSujeto = false;
-
-					boolean tieneVerbo = false;
-
-					boolean punto = false;
-
-					//Cogemos la primera parte hasta el punto en caso de que este estuviese en el bloque posterior
-
-					for (String words : blockPost){
-
-						if(!punto)
-							posibleVerbo = posibleVerbo + " " + words;
-
-						if(words.equals(".") || words.contains("."))
-							punto = true;
-
-					}			
-
-
-					String[] filter = new String[3];
-					filter[0] = "PROPER_NOUN";
-					filter[1] = "PRONOUN";
-					filter[2] = "NOUN";
-
-					url = "tokens"; //Servicio a utilizar de LibrAIry
-					response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
-					if (!response.contains("ERROR")) {
-
-						JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-						String tokens = responseJSON.get("tokens").toString();
-						if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-							tieneSujeto = true;
-
-					}
-
-
-					String[] filter1 = new String[1];
-					filter1[0] = "VERB";
-
-
-					url = "tokens"; //Servicio a utilizar de LibrAIry
-					response = requestLibrAIryTokens.request(filter1, posibleVerbo, url);
-					if (!response.contains("ERROR")) {
-
-						JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-						String tokens = responseJSON.get("tokens").toString();
-						if(tokens.length() != 2)   //Tiene un verbo despues de las comas
-							tieneVerbo = true;
-
-					}
-
-
-
-					if(tieneVerbo&&tieneSujeto)
-						aposicionesDetectadas.put(frasediv,posiblesAposicionesSinVerbo.get(frasediv));
-
-				}
-
-			}
-		}
+		aposicionesDetectadas = detectorAposicion(text);
 
 		String textoCorregido = "";
 		boolean ponerComa = false;
