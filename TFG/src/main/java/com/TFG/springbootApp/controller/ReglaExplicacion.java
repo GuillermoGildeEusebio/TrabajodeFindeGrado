@@ -123,17 +123,14 @@ public class ReglaExplicacion {
 
 		JsonArray tokensAI = responseJSONAI.get("data").getAsJsonObject().get("tokens").getAsJsonArray();
 
-		JsonArray relationsAI = responseJSONAI.get("data").getAsJsonObject().get("relations").getAsJsonArray();
 
 		for (String[] frasediv : posiblesExplicacionesVerbo.keySet()){
 
 			int j = posiblesExplicacionesVerbo.get(frasediv);
 
 			if(j <= blockWords.size() -2) {
-				
-				String posibleVerboDespues = "";
 
-				String primerVerboDespues = "";
+				String posibleVerboDespues = "";
 
 				boolean punto = false;
 
@@ -170,16 +167,8 @@ public class ReglaExplicacion {
 						tieneVerbo = true;
 
 
-					String[] verbos = tokens.split(" ");
-					primerVerboDespues = verbos[0].substring(1).replaceAll("\"", "");
-
-
 
 				}
-
-				String [] blockBefore = blockWords.get(j-1);
-
-				String posibleSujeto = blockBefore[blockBefore.length-1];
 
 				PronombresRelativos allRelativos = new PronombresRelativos();
 
@@ -198,9 +187,9 @@ public class ReglaExplicacion {
 				boolean iguales = false;
 
 				boolean iguales2 = false;
-				
 
-				
+
+
 				int posComa = 0;
 				int kinit = 0;
 
@@ -214,28 +203,32 @@ public class ReglaExplicacion {
 					kinit++;
 				}
 				
-				int idSujeto = tokensAI.get(kinit-2).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
-
-				int headSujeto = tokensAI.get(kinit-2).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+				int y = kinit -2;
 				
 				
-
-				String[] filter = new String[3];
-				filter[0] = "PROPER_NOUN";
-				filter[1] = "PRONOUN";
-				filter[2] = "NOUN";
-
-				url = "tokens"; //Servicio a utilizar de LibrAIry
-				response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
-				if (!response.contains("ERROR")) {
-
-					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-					String tokens = responseJSON.get("tokens").toString();
-					if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propio antes de las comas
-						tieneSujeto = true;
-
+				int idSujeto = -1;
+				
+				boolean out = false;
+				
+				while(y>-1&&!tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(",") && !tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(".")&&!out) {
+					if(tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().equals("NOU") || tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().contains("NPH")) {
+						out = true;
+						idSujeto = tokensAI.get(y).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
+					}
+					if(!out)
+						y--;
+					
 				}
+				
+				int headSujeto = -1;
+				
+				if(idSujeto != -1) {
+					tieneSujeto = true;
+					headSujeto = tokensAI.get(y).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+				}
+
+
+
 
 
 				int i = 0;
@@ -251,7 +244,7 @@ public class ReglaExplicacion {
 				palabra3 = blockWords.get(j)[i+1];
 
 				//Caso 1 -->	Que la estructura este al inicio
-				
+
 
 				if(allRelativos.isRelativo(palabra1) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2)) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3)))
 					tieneNexoInicio = true;
@@ -260,7 +253,7 @@ public class ReglaExplicacion {
 
 				//Caso 2 --> b.	Que la estructura este en medio de la frase. Para este caso usamos expert ai para ver si se refiere al nombre antes de la coma
 
-				if(!tieneNexoInicio) {
+				if(!tieneNexoInicio && tieneSujeto) {
 
 					palabra1 = "";
 					palabra2 = "";
@@ -316,7 +309,7 @@ public class ReglaExplicacion {
 						boolean find = false;
 						int referencia = -1;
 
-						 int k = kinit;
+						int k = kinit;
 
 						//Buscamos el relativo para coger al referencia del relativo
 
@@ -365,8 +358,8 @@ public class ReglaExplicacion {
 					}
 
 				}
-				
-				
+
+
 				if(tieneNexoInicio||iguales){
 
 
@@ -374,9 +367,7 @@ public class ReglaExplicacion {
 
 					int k = kinit;
 
-					//Buscamos el relativo para coger al referencia del relativo
 
-					
 
 					while(!tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")&&k<tokensAI.size()) {
 
@@ -386,18 +377,21 @@ public class ReglaExplicacion {
 
 					int kfin = k;
 
+					//Cogemos el primer verbo despues de la coma
 
 					while(!tokensAI.get(k).getAsJsonObject().get("type").toString().trim().contains("VER")&&k<tokensAI.size()) {
 
 						k++;
 					}
 
+					//guardamos su id
+
 					int idVerb = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
 
 
 					int referencia = idVerb;
 
-
+					//vemos si el verbo hace referencia al sujeto
 
 					boolean continuar = true;
 
@@ -429,7 +423,7 @@ public class ReglaExplicacion {
 
 					int headVerbo = referencia;
 
-					
+					//guardamos los id a los que los nombres relacionados entre si apuntan
 
 					ArrayList<Integer> referenciasNombres = new ArrayList<Integer>();
 
@@ -463,13 +457,12 @@ public class ReglaExplicacion {
 
 					}
 
+					//vemos si el nombre de antes de la coma apunta al verbo o si el verbo apunta a los posibles sujetos
 
 					iguales2 = (headSujeto == idVerb || referenciasNombres.contains(headVerbo));
 
 
 				}
-
-
 
 
 

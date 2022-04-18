@@ -5,6 +5,7 @@ package com.TFG.springbootApp.controller;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -141,6 +142,8 @@ public class ReglaAposicion {
 
 				int posComa = 0;
 				int k = 0;
+				
+				boolean tieneSujeto = false;
 
 				//Bucle para colocarnos en el bloque de la posible aposicion con el analizador sintactico
 
@@ -153,10 +156,34 @@ public class ReglaAposicion {
 				}
 
 				//cogemos el id del sujeto para su posterior utilizacion
-
-				int idSujeto = tokensAI.get(k-2).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
+				
+			
+				
+				int y = k -2;
 				
 				
+				int idSujeto = -1;
+				
+				boolean out = false;
+				
+				while(y>-1&&!tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(",") && !tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(".")&&!out) {
+					if(tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().equals("NOU") || tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().contains("NPH")) {
+						out = true;
+						idSujeto = tokensAI.get(y).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
+					}
+					if(!out)
+						y--;
+					
+				}
+				
+				int headSujeto = -1;
+				
+				if(idSujeto != -1) {
+					tieneSujeto = true;
+					headSujeto = tokensAI.get(y).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+				}
+				
+		
 				//sacamos la posible aposicion a un String 
 
 				String [] blockAc = blockWords.get(j);
@@ -172,13 +199,15 @@ public class ReglaAposicion {
 
 				//cogemos el primer nombre de la posible aposicion
 
-				String[] filter2 = new String[1];
+				String[] filter2 = new String[2];
 				filter2[0] = "NOUN";		//Tipo de palabra que queremos encontrar
-
+				filter2[1] = "PROPER_NOUN";
 
 				String url = "annotations"; //Servicio a utilizar de LibrAIry
 				String response = requestLibrAIryAnnotationsGroups.request(filter2, blockActual, url);
 				String noun = "";
+				
+				
 				if (!response.contains("ERROR")) {
 
 					JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
@@ -195,25 +224,48 @@ public class ReglaAposicion {
 
 				while(!find&&!noun.equals("")&&k<tokensAI.size()) {
 					if(tokensAI.get(k).getAsJsonObject().get("lemma").getAsString().trim().equals(noun)) {
-						referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+						referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
 						find = true;
 					}
 					k++;
 				}
+				
+				
+				ArrayList<Integer> idRecorridos2 = new ArrayList<Integer>();
+				boolean continuar = true;
+				
+				while(continuar) {
+
+					boolean restart = true;
+					k = 0;
+					while(restart) {			
+						if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
+							referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+							if(referencia == idSujeto || headSujeto == referencia)
+								continuar = false;
+							if(idRecorridos2.contains(referencia))
+								continuar = false;
+							else
+								idRecorridos2.add(referencia);
+							restart = false;
+						}
+						k++;
+						if(k == tokensAI.size()-1)
+							continuar = false;
+					}
+
+				}
+				
 
 				//si el nombre hace referencia al nombre/pronombre/Nombre personal de antes de la coma es una posible aposicion.
 
-				if(referencia == idSujeto) {
-
-					String [] blockBefore = blockWords.get(j-1);
-
-					String posibleSujeto = blockBefore[blockBefore.length-1];
+				if(referencia == idSujeto || headSujeto == referencia) {
 
 					String [] blockPost = blockWords.get(j+1);
 
 					String posibleVerbo = "";
 
-					boolean tieneSujeto = false;
+					
 
 					boolean tieneVerbo = false;
 
@@ -230,24 +282,8 @@ public class ReglaAposicion {
 							punto = true;
 
 					}			
-
-
-					String[] filter = new String[3];
-					filter[0] = "PROPER_NOUN";
-					filter[1] = "PRONOUN";
-					filter[2] = "NOUN";
-
-					url = "tokens"; //Servicio a utilizar de LibrAIry
-					response = requestLibrAIryTokens.request(filter, posibleSujeto, url);
-					if (!response.contains("ERROR")) {
-
-						JsonObject responseJSON = new Gson().fromJson(response, JsonObject.class);
-
-						String tokens = responseJSON.get("tokens").toString();
-						if(tokens.length() != 2)   //Tiene un pronombre, un nombre o un nombre propioantes de las comas
-							tieneSujeto = true;
-
-					}
+			
+					
 
 
 					String[] filter1 = new String[1];
