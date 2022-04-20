@@ -453,8 +453,11 @@ public class ReglaExplicacion {
 
 							}
 							k++;
+							if(k == tokensAI.size())
+								restart = false;
 						}
-
+						if(k == tokensAI.size())
+							continuar = false;
 					}
 
 					//vemos si el nombre de antes de la coma apunta al verbo o si el verbo apunta a los posibles sujetos
