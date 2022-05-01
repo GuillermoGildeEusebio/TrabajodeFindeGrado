@@ -184,11 +184,11 @@ public class ReglaExplicacion {
 
 				boolean tieneSujeto = false;
 
-				boolean iguales = false;
+				boolean nexoMedioyRelacionConSujeto = false;
 
-				boolean iguales2 = false;
+				boolean verboDespuesRelacionSujeto = false;
 
-				boolean iguales3 = false;
+				boolean sinNexoPeroRelacionConSujeto = false;
 
 				int posComa = 0;
 				int kinit = 0;
@@ -202,14 +202,14 @@ public class ReglaExplicacion {
 
 					kinit++;
 				}
-				
+
 				int y = kinit -2;
-				
-				
+
+
 				int idSujeto = -1;
-				
+
 				boolean out = false;
-				
+
 				while(y>-1&&!tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(",") && !tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(".")&&!out) {
 					if(tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().equals("NOU") || tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().contains("NPH")) {
 						out = true;
@@ -217,11 +217,11 @@ public class ReglaExplicacion {
 					}
 					if(!out)
 						y--;
-					
+
 				}
-				
+
 				int headSujeto = -1;
-				
+
 				if(idSujeto != -1) {
 					tieneSujeto = true;
 					headSujeto = tokensAI.get(y).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
@@ -229,134 +229,134 @@ public class ReglaExplicacion {
 
 
 				if(tieneSujeto && tieneVerbo) {
-				
-				
-
-				int i = 0;
-				while(palabra1.equals("")) {															//error espacio en blanco despues de la coma
-					if(!(blockWords.get(j)[i].equals(" ") || blockWords.get(j)[i].equals("")))
-						palabra1 = blockWords.get(j)[i];
-					i++;
-				}
-
-
-				palabra2 = blockWords.get(j)[i];
-
-				palabra3 = blockWords.get(j)[i+1];
-
-				//Caso 1 -->	Que la estructura este al inicio
-
-
-				if(allRelativos.isRelativo(palabra1) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2)) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3)))
-					tieneNexoInicio = true;
 
 
 
-				//Caso 2 --> b.	Que la estructura este en medio de la frase. Para este caso usamos expert ai para ver si se refiere al nombre antes de la coma
-
-				if(!tieneNexoInicio ) {
-
-					palabra1 = "";
-					palabra2 = "";
-					palabra3 = "";
-
-
-					//Buscamos la estructura
-
-					while(!tieneNexo&&i<blockWords.get(j).length - 1) {
-
-						palabra1 = blockWords.get(j)[i];
-						if(allRelativos.isRelativo(palabra1)) {
-							tieneNexo = true;
-
-						}
-
-						if(i<blockWords.get(j).length - 2) {
-
-							palabra2 = blockWords.get(j)[i + 1];
-							if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2))) {
-								tieneNexo = true;
-							}
-
-						}
-
-
-
-						if(i<blockWords.get(j).length - 3) {
-
-							palabra3 = blockWords.get(j)[i +2];
-							if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3))) {
-								tieneNexo = true;
-							}
-
-						}
-
-
+					int i = 0;
+					while(palabra1.equals("")) {															//error espacio en blanco despues de la coma
+						if(!(blockWords.get(j)[i].equals(" ") || blockWords.get(j)[i].equals("")))
+							palabra1 = blockWords.get(j)[i];
 						i++;
-
-
 					}
 
 
-					//Vemos si pertenece al caso1
+					palabra2 = blockWords.get(j)[i];
 
-					if(tieneNexo) {
+					palabra3 = blockWords.get(j)[i+1];
 
-						//cogemos el id del sujeto
-
-
-						boolean find = false;
-						int referencia = -1;
-
-						int k = kinit;
-
-						//Buscamos el relativo para coger al referencia del relativo
+					//Caso 1 -->	Que la estructura este al inicio
 
 
-						while(!find&&k<tokensAI.size()) {
-							if(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim().equals("PRO")) {
-								referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
-								find = true;
+					if(allRelativos.isRelativo(palabra1) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2)) || (preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3)))
+						tieneNexoInicio = true;
+
+
+
+					//Caso 2 --> b.	Que la estructura este en medio de la frase. Para este caso usamos expert ai para ver si se refiere al nombre antes de la coma
+
+					if(!tieneNexoInicio ) {
+
+						palabra1 = "";
+						palabra2 = "";
+						palabra3 = "";
+
+
+						//Buscamos la estructura
+
+						while(!tieneNexo&&i<blockWords.get(j).length - 1) {
+
+							palabra1 = blockWords.get(j)[i];
+							if(allRelativos.isRelativo(palabra1)) {
+								tieneNexo = true;
+
 							}
-							k++;
+
+							if(i<blockWords.get(j).length - 2) {
+
+								palabra2 = blockWords.get(j)[i + 1];
+								if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2)) || (allRelativos.isRelativo(palabra1 + " " + palabra2))) {
+									tieneNexo = true;
+								}
+
+							}
+
+
+
+							if(i<blockWords.get(j).length - 3) {
+
+								palabra3 = blockWords.get(j)[i +2];
+								if((preposiciones.isPreposicion(palabra1) && allRelativos.isRelativo(palabra2 + " " + palabra3))) {
+									tieneNexo = true;
+								}
+
+							}
+
+
+							i++;
+
+
 						}
 
 
-						k = kinit;
+						//Vemos si pertenece al caso1
 
-						boolean end = false;
+						if(tieneNexo) {
 
-						ArrayList<Integer> idRecorridos = new ArrayList<Integer>();  // aqui vamos guardando por que id vamos pasando para que no se quede en bucle
+							//cogemos el id del sujeto
 
 
-						//bucle para ver si nuestro pronombre al final se acaba relacionando con el nombre antes de la coma 
+							boolean find = false;
+							int referencia = -1;
 
-						while(referencia > kinit  && !end) {
+							int k = kinit;
 
-							boolean restart = true;
-							k = kinit;
-							while(restart) {
-								if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
+							//Buscamos el relativo para coger al referencia del relativo
+
+
+							while(!find&&k<tokensAI.size()) {
+								if(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim().equals("PRO")) {
 									referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
-									if(idRecorridos.contains(referencia))
-										end = true;
-									else
-										idRecorridos.add(referencia);
-									restart = false;
+									find = true;
 								}
 								k++;
 							}
 
+
+							k = kinit;
+
+							boolean end = false;
+
+							ArrayList<Integer> idRecorridos = new ArrayList<Integer>();  // aqui vamos guardando por que id vamos pasando para que no se quede en bucle
+
+
+							//bucle para ver si nuestro pronombre al final se acaba relacionando con el nombre antes de la coma 
+
+							while(referencia > kinit  && !end) {
+
+								boolean restart = true;
+								k = kinit;
+								while(restart) {
+									if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
+										referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+										if(idRecorridos.contains(referencia))
+											end = true;
+										else
+											idRecorridos.add(referencia);
+										restart = false;
+									}
+									k++;
+								}
+
+							}
+
+
+							nexoMedioyRelacionConSujeto = referencia == idSujeto;
+
+
+
 						}
 
-
-						iguales = referencia == idSujeto;
-
-
-
 					}
-
-				}
 
 
 
@@ -364,7 +364,7 @@ public class ReglaExplicacion {
 					//ver si el id del verbo apunta al sujeto o viceversa
 
 					int k = kinit;
-					
+
 
 
 					while(!tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")&&k<tokensAI.size()) {
@@ -374,12 +374,11 @@ public class ReglaExplicacion {
 					}
 
 					int kfin = k;
-					
-					
+
+
 
 					//Cogemos el primer verbo despues de la coma
-					
-					System.out.println(tieneVerbo);
+
 
 					while(!tokensAI.get(k).getAsJsonObject().get("type").toString().trim().contains("VER")&&k<tokensAI.size()) {
 
@@ -464,135 +463,129 @@ public class ReglaExplicacion {
 
 					//vemos si el nombre de antes de la coma apunta al verbo o si el verbo apunta a los posibles sujetos
 
-					iguales2 = (headSujeto == idVerb || referenciasNombres.contains(headVerbo) || headSujeto == headVerbo);
-					
-					
+					verboDespuesRelacionSujeto = (headSujeto == idVerb || referenciasNombres.contains(headVerbo) || headSujeto == headVerbo);		
 
 
-				
-				
-				
-				if(iguales2&& !tieneNexoInicio && !iguales) {
-					
-					 k = kinit;
+					if(verboDespuesRelacionSujeto&& !tieneNexoInicio && !nexoMedioyRelacionConSujeto) {
+
+						k = kinit;
 
 
-					while(!tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")&&k<tokensAI.size()) {
+						while(!tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")&&k<tokensAI.size()) {
 
 
-						k++;
-					}
-
-					 kfin = k;
-
-					//Cogemos el primer verbo de la frase
-					
-					k = kinit;
-
-					while(!tokensAI.get(k).getAsJsonObject().get("type").toString().trim().contains("VER")&&k<tokensAI.size()) {
-
-						k++;
-					}
-
-					//guardamos su id
-
-					 idVerb = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
-
-					 referencia = idVerb;
-					
-					
-
-					//vemos si el verbo hace referencia al sujeto
-
-					 continuar = true;
-
-					idRecorridos2 = new ArrayList<Integer>();
-
-					
-					
-					//vemos si el verbo referencia al sujeto antes de la coma
-					while(referencia >= kinit && continuar) {
-
-						boolean restart = true;
-						k = 0;
-						
-						while(restart) {
-
-							if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
-								referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
-								if(referencia == idSujeto)
-									continuar = false;
-								if(idRecorridos2.contains(referencia))
-									continuar = false;
-								else
-									idRecorridos2.add(referencia);
-								restart = false;
-							}
 							k++;
 						}
 
-					}
+						kfin = k;
 
-					continuar  = true;
+						//Cogemos el primer verbo de la frase
 
-					int headVerboFrase = referencia;
-					
-					
-					
+						k = kinit;
 
-					//guardamos los id a los que los nombres relacionados entre si apuntan
+						while(!tokensAI.get(k).getAsJsonObject().get("type").toString().trim().contains("VER")&&k<tokensAI.size()) {
 
-					referenciasNombres = new ArrayList<Integer>();
-					
-					referenciasNombres.add(idSujeto);
+							k++;
+						}
 
-					referencia = idSujeto;
+						//guardamos su id
 
-					while(continuar) {
+						idVerb = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
 
-						boolean restart = true;
-						k = 0;
-						while(restart) {
-							if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
-								if(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim().equals("NOU")) {
-									if(referenciasNombres.contains(referencia)) {
+						referencia = idVerb;
+
+
+
+						//vemos si el verbo hace referencia al sujeto
+
+						continuar = true;
+
+						idRecorridos2 = new ArrayList<Integer>();
+
+
+
+						//vemos si el verbo referencia al sujeto antes de la coma
+						while(referencia >= kinit && continuar) {
+
+							boolean restart = true;
+							k = 0;
+
+							while(restart) {
+
+								if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
+									referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+									if(referencia == idSujeto)
 										continuar = false;
-										restart = false;
+									if(idRecorridos2.contains(referencia))
+										continuar = false;
+									else
+										idRecorridos2.add(referencia);
+									restart = false;
+								}
+								k++;
+							}
+
+						}
+
+						continuar  = true;
+
+						int headVerboFrase = referencia;
+
+
+
+
+						//guardamos los id a los que los nombres relacionados entre si apuntan
+
+						referenciasNombres = new ArrayList<Integer>();
+
+						referencia = idSujeto;
+
+						while(continuar) {
+
+							boolean restart = true;
+							k = 0;
+							while(restart) {
+								if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
+									System.out.println(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim());
+									if(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim().equals("NOU")) {
+										if(referenciasNombres.contains(referencia)) {
+											continuar = false;
+											restart = false;
+										}
+										else {
+											restart = false;
+											referenciasNombres.add(referencia);
+											referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+										}
 									}
 									else {
 										restart = false;
-										referenciasNombres.add(referencia);
-										referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("head").getAsInt();
+										continuar = false;
 									}
-								}
-								else {
-									restart = false;
-									continuar = false;
-								}
 
+								}
+								k++;
+								if(k == tokensAI.size())
+									restart = false;
 							}
-							k++;
 							if(k == tokensAI.size())
-								restart = false;
+								continuar = false;
 						}
-						if(k == tokensAI.size())
-							continuar = false;
+
+						//vemos si el nombre de antes de la coma apunta al verbo o si el verbo apunta a los posibles sujetos
+
+						sinNexoPeroRelacionConSujeto = (headSujeto == idVerb || referenciasNombres.contains(headVerboFrase) || headSujeto == headVerboFrase);
+
+
+
 					}
 
-					//vemos si el nombre de antes de la coma apunta al verbo o si el verbo apunta a los posibles sujetos
 
-					iguales3 = (headSujeto == idVerb || referenciasNombres.contains(headVerboFrase) || headSujeto == headVerboFrase);
-					
-					
-					
 				}
-				
-				
-				}
-				
 
 
-				if(tieneSujeto&&tieneVerbo&&(tieneNexoInicio||iguales||iguales3)&&iguales2)
+
+				if(tieneSujeto&&tieneVerbo&&(tieneNexoInicio||nexoMedioyRelacionConSujeto||sinNexoPeroRelacionConSujeto)&&verboDespuesRelacionSujeto)
 					explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
 
 			}
