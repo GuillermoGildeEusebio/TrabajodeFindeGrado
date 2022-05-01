@@ -250,8 +250,10 @@ public class ReglaAposicion {
 							restart = false;
 						}
 						k++;
-						if(k == tokensAI.size()-1)
+						if(k == tokensAI.size()-1) {
 							continuar = false;
+							restart = false;
+						}
 					}
 
 				}
