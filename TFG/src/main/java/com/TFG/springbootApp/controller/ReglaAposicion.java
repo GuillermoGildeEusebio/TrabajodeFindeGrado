@@ -33,7 +33,7 @@ import ai.expert.nlapi.v2.message.AnalyzeResponse;
 @RestController
 public class ReglaAposicion {	
 
-	private Map<String[] ,Integer> detectorAposicion(String text) throws IOException{
+	public Map<String[] ,Integer> detectorAposicion(String text) throws IOException{
 		
 		
 		List<String[]> blockWords = new LinkedList<String[]>();
@@ -167,7 +167,8 @@ public class ReglaAposicion {
 				boolean out = false;
 				
 				while(y>-1&&!tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(",") && !tokensAI.get(y).getAsJsonObject().get("lemma").toString().contains(".")&&!out) {
-					if(tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().equals("NOU") || tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().contains("NPH")) {
+					if(tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().equals("NOU") || tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().contains("NPH")
+							|| tokensAI.get(y).getAsJsonObject().get("type").getAsString().trim().contains("NPR")) {
 						out = true;
 						idSujeto = tokensAI.get(y).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
 					}
@@ -223,7 +224,7 @@ public class ReglaAposicion {
 				//cogemos a quien hace referencia el nombre cogido anteriormente 
 
 				while(!find&&!noun.equals("")&&k<tokensAI.size()) {
-					if(tokensAI.get(k).getAsJsonObject().get("lemma").getAsString().trim().equals(noun)) {
+					if(tokensAI.get(k).getAsJsonObject().get("lemma").getAsString().trim().equalsIgnoreCase(noun)) {
 						referencia = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
 						find = true;
 					}

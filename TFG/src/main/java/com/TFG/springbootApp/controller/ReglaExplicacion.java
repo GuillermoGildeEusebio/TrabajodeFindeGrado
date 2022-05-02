@@ -35,7 +35,7 @@ import ai.expert.nlapi.v2.message.AnalyzeResponse;
 @RestController
 public class ReglaExplicacion {	
 
-	private Map<String[] ,Integer> detectorExolicaciones(String text) throws IOException{
+	public Map<String[] ,Integer> detectorExolicaciones(String text) throws IOException{
 
 		List<String[]> blockWords = new LinkedList<String[]>();
 
