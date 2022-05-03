@@ -35,7 +35,7 @@ import ai.expert.nlapi.v2.message.AnalyzeResponse;
 @RestController
 public class ReglaExplicacion {	
 
-	public Map<String[] ,Integer> detectorExolicaciones(String text) throws IOException{
+	public Map<String[] ,Integer> detectorExplicaciones(String text) throws IOException{
 
 		List<String[]> blockWords = new LinkedList<String[]>();
 
@@ -546,7 +546,6 @@ public class ReglaExplicacion {
 							k = 0;
 							while(restart) {
 								if(tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt() == referencia) {
-									System.out.println(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim());
 									if(tokensAI.get(k).getAsJsonObject().get("type").getAsString().trim().equals("NOU")) {
 										if(referenciasNombres.contains(referencia)) {
 											continuar = false;
@@ -610,7 +609,7 @@ public class ReglaExplicacion {
 
 		Map<String[] ,Integer> explicacionesDetectadas = new HashMap<String[] , Integer>();
 
-		explicacionesDetectadas = detectorExolicaciones(text);
+		explicacionesDetectadas = detectorExplicaciones(text);
 
 
 		String reason = "El texto contiene las siguientes explicaciones [";
@@ -658,7 +657,7 @@ public class ReglaExplicacion {
 			blockWords.add(word);
 		}
 
-		explicacionesDetectadas = detectorExolicaciones(text);
+		explicacionesDetectadas = detectorExplicaciones(text);
 
 		String textoCorregido = "";
 		boolean ponerComa = false;
