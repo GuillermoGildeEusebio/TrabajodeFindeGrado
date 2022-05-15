@@ -192,8 +192,10 @@ class ReglaExplicacionTest {
 	
 	@Test
 	void Prueba10() throws Exception {
-		String text = "Maria, a quien hecho mucho de menos, vendrá a visitarme este fin de semana por mi cumpleaños.";
-
+		String text = "El término “cíborg” hizo su primera aparición en un artículo de Manfred Clynes y Nathan S. Kline publicado en 1960 en la revista Astronautics y titulado “Cíborgs y espacio”. "
+				+ "La palabra es una contracción de la expresión inglesa “cybernetic organism”. La integración del humano con la máquina, que es en última instancia lo que constituye un cíborg, es un escenario más pragmático y conciliador que lo que hemos descrito hasta ahora. "
+				+ "¿Por qué luchar contra las máquinas u oponerse a su evolución en inteligencia si podemos formar parte de sus filas, y si ellas pueden también formar parte de las nuestras? El cíborg es un futuro preferible al de la guerra total contra las máquinas, al modo de Terminator. ";
+				
 		Map<String[] ,Integer> explicacionDetectadas = new HashMap<String[] , Integer>();
 		
 		
