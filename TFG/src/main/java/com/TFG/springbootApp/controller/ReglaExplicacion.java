@@ -365,7 +365,7 @@ public class ReglaExplicacion {
 
 					int k = kinit;
 
-
+					
 
 					while(!tokensAI.get(k).getAsJsonObject().get("lemma").toString().contains(",")&&k<tokensAI.size()) {
 
@@ -379,12 +379,12 @@ public class ReglaExplicacion {
 
 					//Cogemos el primer verbo despues de la coma
 
-
-					while(!tokensAI.get(k).getAsJsonObject().get("type").toString().trim().contains("VER")&&k<tokensAI.size()) {
+					while(k<tokensAI.size() &&!tokensAI.get(k).getAsJsonObject().get("type").toString().trim().contains("VER")) {
 
 						k++;
 					}
 
+					if(k != tokensAI.size()) {
 					//guardamos su id
 
 					int idVerb = tokensAI.get(k).getAsJsonObject().get("dependency").getAsJsonObject().get("id").getAsInt();
@@ -582,7 +582,7 @@ public class ReglaExplicacion {
 
 				}
 
-
+				}
 
 				if(tieneSujeto&&tieneVerbo&&(tieneNexoInicio||nexoMedioyRelacionConSujeto||sinNexoPeroRelacionConSujeto)&&verboDespuesRelacionSujeto)
 					explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));
@@ -604,7 +604,6 @@ public class ReglaExplicacion {
 		int id = 1;
 		String name = "Regla - Deteccion de Explicaciones entre comas";
 		String description = "Detectar el uso de explicaciones entre comas.";
-		boolean pass = true;
 
 
 		Map<String[] ,Integer> explicacionesDetectadas = new HashMap<String[] , Integer>();
@@ -628,7 +627,7 @@ public class ReglaExplicacion {
 
 		reason = reason + "]";
 
-		return respuestaJSONDeteccion.codificador(id,name,description, pass, reason);	
+		return respuestaJSONDeteccion.codificador(id,name,description, reason);	
 
 	}	
 

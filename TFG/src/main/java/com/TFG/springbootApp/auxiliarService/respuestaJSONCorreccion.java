@@ -11,8 +11,7 @@ public class respuestaJSONCorreccion {
         int id; //id de la regla
         String name; //nombre de la regla
         String description; //descripcion de la regla
-        //En caso de que haya que hacer transformaciones en el texto, se obtiene el texto con las transformaciones
-        //Si no hay que realizar cambios, textCorrected = Not Apply
+
         String textCorrected;
 
         //Constructor

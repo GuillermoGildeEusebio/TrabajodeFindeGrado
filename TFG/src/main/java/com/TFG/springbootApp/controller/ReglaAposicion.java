@@ -331,7 +331,7 @@ public class ReglaAposicion {
 		int id = 2;
 		String name = "Regla - Identificar Aposiciones entre comas";
 		String description = "Detectar el uso de explicaciones entre comas.";
-		boolean pass = true;
+
 		
 
 		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
@@ -356,7 +356,7 @@ public class ReglaAposicion {
 
 		reason = reason + "]";
 
-		return respuestaJSONDeteccion.codificador(id,name,description, pass, reason);	
+		return respuestaJSONDeteccion.codificador(id,name,description, reason);	
 
 
 	}
