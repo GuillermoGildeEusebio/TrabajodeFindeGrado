@@ -183,6 +183,8 @@ class ReglaAposicionTests {
 	}
 	
 	
+	
+	
 	@Test
 	void Prueba10() throws Exception {
 		String text = "Los chinos, que tienen una visión más dual y menos maniquea de las cosas, suelen decir que un error es una oportunidad. En el mundo occidental, en cambio, un error es visto siempre como un fracaso; por eso me parece interesante pararse por un momento a pensar cuánto debemos a nuestras equivocaciones. Hace poco estuvo en Madrid el físico francés Gérard Mourou, al que lo que podía haber sido un trágico accidente laboral le valió un Premio Nobel. "
@@ -204,6 +206,188 @@ class ReglaAposicionTests {
 		
 	}
 	
+	
+	@Test
+	void Prueba11() throws Exception {
+		String text = "Adri, mi hermana, juega muy bien al padel.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	@Test
+	void Prueba12() throws Exception {
+		String text = "Boadilla, mi pueblo, es uno de los municipios con menos delincuencia.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	
+	@Test
+	void Prueba13() throws Exception {
+		String text = "Mi tio Juan, el alto, tiene una limusina";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	
+	@Test
+	void Prueba14() throws Exception {
+		String text = "Rafa Nadal, el tenista, tiene muchos trofeos.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	@Test
+	void Prueba15() throws Exception {
+		String text = "Cristina, mi madre, cocinaba muy bien.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	@Test
+	void Prueba16() throws Exception {
+		String text = "El otro dia fui al Wanda Metropolitano, el campo del Atletico, a ver un partido.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	@Test
+	void Prueba17() throws Exception {
+		String text = "LG, la empresa de Corea del Sur, tiene buenos productos.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	@Test
+	void Prueba18() throws Exception {
+		String text = "Zara, la empresa española, vende ropa.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	@Test
+	void Prueba19() throws Exception {
+		String text = "Adidas, la empresa alemana, vende muy buenas zapatillas.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
+	
+	@Test
+	void Prueba20() throws Exception {
+		String text = "Rafa, el electricista, es mi amigo de la infancia.";
+		
+		Map<String[] ,Integer> aposicionesDetectadas = new HashMap<String[] , Integer>();
+		
+		
+		aposicionesDetectadas = aposicion.detectorAposicion(text);
+				
+				
+		assertTrue(aposicionesDetectadas.size() == 1);
+		
+		Collection<Integer> posicionAposiciones = aposicionesDetectadas.values();
+		
+		assertTrue(posicionAposiciones.contains(1));
+		
+	}
 
 		
 	

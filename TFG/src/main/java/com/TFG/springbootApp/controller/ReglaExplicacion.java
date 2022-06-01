@@ -83,6 +83,8 @@ public class ReglaExplicacion {
 			for (String tokens : frasediv){
 				frase  = frase +  " " + tokens;
 			}
+			
+			
 
 			//llamada a Libraly
 
@@ -583,6 +585,14 @@ public class ReglaExplicacion {
 				}
 
 				}
+				
+				System.out.println("tieneSujeto" + tieneSujeto);
+				System.out.println("tieneVerbo" + tieneVerbo);
+				System.out.println("tieneNexoInicio" + tieneNexoInicio);
+				System.out.println("nexoMedioyRelacionConSujeto" + nexoMedioyRelacionConSujeto);
+				System.out.println("sinNexoPeroRelacionConSujeto" + sinNexoPeroRelacionConSujeto);
+				System.out.println("verboDespuesRelacionSujeto" + verboDespuesRelacionSujeto);
+				
 
 				if(tieneSujeto&&tieneVerbo&&(tieneNexoInicio||nexoMedioyRelacionConSujeto||sinNexoPeroRelacionConSujeto)&&verboDespuesRelacionSujeto)
 					explicacionesDetectadas.put(frasediv,posiblesExplicacionesVerbo.get(frasediv));

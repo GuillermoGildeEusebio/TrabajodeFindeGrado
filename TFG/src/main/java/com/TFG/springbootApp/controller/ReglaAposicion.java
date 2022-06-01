@@ -306,7 +306,6 @@ public class ReglaAposicion {
 					}
 
 
-
 					if(tieneVerbo&&tieneSujeto)
 						aposicionesDetectadas.put(frasediv,posiblesAposicionesSinVerbo.get(frasediv));
 
