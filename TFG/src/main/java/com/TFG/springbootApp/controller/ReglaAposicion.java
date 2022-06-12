@@ -329,7 +329,7 @@ public class ReglaAposicion {
 
 		int id = 2;
 		String name = "Regla - Identificar Aposiciones entre comas";
-		String description = "Detectar el uso de explicaciones entre comas.";
+		String description = "Detectar el uso de aposiciones entre comas.";
 
 		
 
