@@ -367,7 +367,7 @@ public class ReglaAposicion {
 
 		int id = 2;
 		String name = "Regla - Adaptacion de Aposiciones entre comas";
-		String description = "Adaptar el uso de adaptaciones entre comas.";
+		String description = "Adaptar el uso de aposiciones entre comas.";
 		
 		List<String[]> blockWords = new LinkedList<String[]>();
 
